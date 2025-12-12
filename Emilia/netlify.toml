@@ -1,5 +1,5 @@
 [build]
-  base    = "Project Folder"  # <--- ADD THIS LINE
+  base    = "Emilia"  # <--- ADD THIS LINE
   command = "npm run build"
   publish = "Project Folder/dist" # <--- IMPORTANT: Update the publish path
 
