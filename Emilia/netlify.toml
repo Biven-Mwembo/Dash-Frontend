@@ -1,9 +1,10 @@
 [build]
-  base    = "Emilia"
-  # ADD THIS LINE: This forces a clean install of all dependencies before building.
-  install = "npm install"
+  base = "Emilia"
   command = "npm run build"
-  publish = "Emilia/dist" 
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
 
 [[redirects]]
   from = "/*"
