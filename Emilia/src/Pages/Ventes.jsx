@@ -19,7 +19,7 @@ import {
 // NOTE: Les appels d'API (par exemple, à /api/dashboard) sont actuellement en échec avec une erreur 500.
 // Cela indique un problème avec le serveur backend fonctionnant sur localhost:7052.
 // Le code frontend gère l'erreur avec élégance, mais les données ne se chargeront pas tant que le serveur ne sera pas réparé.
-const API_BASE_URL = "https://localhost:7052"; 
+const API_BASE_URL = "https://dash-backend-1-60mf.onrender.com"; 
 
 // --- COMPOSANTS UTILITAIRES ---
 

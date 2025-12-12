@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import logo from "../../assets/logo.png";
 import PageWrapper from "../PageWrapper";
+// ✅ Centralized API URL import
+import API_BASE_URL from "../../apiConfig";
 
 export default function Signup() {
   const [form, setForm] = useState({
@@ -11,7 +13,7 @@ export default function Signup() {
     surname: "",
   });
   const [message, setMessage] = useState("");
-  const [isSuccess, setIsSuccess] = useState(false); // Track success
+  const [isSuccess, setIsSuccess] = useState(false); 
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -26,7 +28,8 @@ export default function Signup() {
     setLoading(true);
 
     try {
-      const res = await fetch("https://localhost:7052/api/auth/signup", {
+      // ✅ Updated to use production-ready URL
+      const res = await fetch(`${API_BASE_URL}/auth/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),

@@ -1,6 +1,7 @@
 import { useState } from "react";
-import logo from "../../assets/logo.png";
+import logo from "../../assets/dash.svg";
 import PageWrapper from "../PageWrapper";
+import API_BASE_URL from "../../apiConfig";
 
 export default function Login() {
   const [form, setForm] = useState({ email: "", password: "" });
@@ -17,19 +18,17 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const res = await fetch("https://localhost:7052/api/auth/login", {
+      const res = await fetch(`${API_BASE_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
 
       const data = await res.json();
-      console.log("Login response data:", data); // Debug
 
       if (res.ok) {
-        localStorage.setItem("token", data.token); // Adjust key if needed
-        console.log("Token stored:", data.token);
-        window.location.href = "/dashboard"; // ✅ Redirect to dashboard after login
+        localStorage.setItem("token", data.token);
+        window.location.href = "/dashboard"; 
       } else {
         setMessage(data?.Message || data?.message || "Login failed");
       }

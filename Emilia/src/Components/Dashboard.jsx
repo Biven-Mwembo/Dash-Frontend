@@ -9,11 +9,11 @@ import {
   ChevronRight,
   X,
   Search,
-  Printer, // Ajout de l'icône Printer
+  Printer,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
-
-const API_BASE_URL = "https://localhost:7052"; // Your API URL
+// ✅ Centralized API URL import
+import API_BASE_URL from "../../apiConfig";
 
 // --- Composant de Réception pour l'Impression ---
 const ComponentRecu = React.forwardRef(({ cartDetails, total }, ref) => {
@@ -25,7 +25,6 @@ const ComponentRecu = React.forwardRef(({ cartDetails, total }, ref) => {
   const heureTransaction = new Date().toLocaleTimeString('fr-FR');
 
   return (
-    // Ce div doit être stylisé pour l'impression (ex: largeur max 80mm)
     <div ref={ref} className="p-4 bg-white text-black print:w-[80mm] print:text-sm">
       <h2 className="text-center font-bold text-lg mb-2 print:text-base">Reçu de Vente</h2>
       <p className="text-center text-xs mb-4">Date: {dateTransaction} | Heure: {heureTransaction}</p>
@@ -63,7 +62,7 @@ const RecuModal = ({ isOpen, onClose, cartDetails, total }) => {
 
   const handlePrint = () => {
     window.print();
-    onClose(); // Fermer la modale après l'impression
+    onClose();
   };
 
   if (!isOpen) return null;
@@ -90,7 +89,6 @@ const RecuModal = ({ isOpen, onClose, cartDetails, total }) => {
           Souhaitez-vous imprimer un reçu pour le client ?
         </p>
 
-        {/* Aperçu du Reçu (hidden on screen, visible only for printing) */}
         <div className="hidden print:block absolute top-0 left-0 w-full h-full">
             <ComponentRecu ref={receiptRef} cartDetails={cartDetails} total={total} />
         </div>
@@ -114,48 +112,37 @@ const RecuModal = ({ isOpen, onClose, cartDetails, total }) => {
   );
 };
 
-
 // --- Composant Principal Produits ---
 export default function Produits() {
-  // State for Products Section
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [products, setProducts] = useState([]); // Dynamic products from API
+  const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // State for Cart/Checkout
   const [cart, setCart] = useState([]);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutMessage, setCheckoutMessage] = useState("");
-  // NOUVEL ÉTAT POUR L'IMPRESSION
-  const [lastSaleReceipt, setLastSaleReceipt] = useState(null); // { cartDetails, total }
+  const [lastSaleReceipt, setLastSaleReceipt] = useState(null);
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
 
-
-  // State for Sales Section
-  const [sales, setSales] = useState([]); // Sales data
-  const [salesSearchQuery, setSalesSearchQuery] = useState(""); // state for sales search
+  const [sales, setSales] = useState([]);
+  const [salesSearchQuery, setSalesSearchQuery] = useState("");
   const [loadingSales, setLoadingSales] = useState(true);
   const [errorSales, setErrorSales] = useState(null);
 
   const productsPerPage = 8;
 
-  // Function to format number with spaces after every 3 digits
   const formatNumber = (num) => {
     return num.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
   };
 
-  // Function to format sale date for search
   const formatDateForSearch = (isoDate) => {
     const dateObj = new Date(isoDate);
-    // Format: "M/D/YYYY" (e.g., 10/1/2023) to match toLocaleDateString() output
     return dateObj.toLocaleDateString('fr-FR');
   };
 
-
-  // Fetch products from API on mount
   useEffect(() => {
     const fetchProducts = async () => {
       setLoading(true);
@@ -174,9 +161,8 @@ export default function Produits() {
       }
     };
     fetchProducts();
-  }, [lastSaleReceipt]); // Ajout de lastSaleReceipt pour rafraîchir le stock après une vente
+  }, [lastSaleReceipt]);
 
-  // Fetch sales data on mount (UPDATED LOGIC FOR SORTING)
   useEffect(() => {
     const fetchSales = async () => {
       setLoadingSales(true);
@@ -184,34 +170,26 @@ export default function Produits() {
       try {
         const token = localStorage.getItem("token");
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        console.log("Fetching sales...");
         const response = await fetch(`${API_BASE_URL}/api/products/sales`, { headers });
-        console.log("Sales response status:", response.status);
         if (!response.ok) throw new Error("Échec de la récupération des ventes");
         const data = await response.json();
         
-        // --- NOUVELLE LOGIQUE DE TRI: Du Plus Récent au Plus Ancien (Décroissant) ---
         const sortedSales = data.sort((a, b) => new Date(b.saleDate) - new Date(a.saleDate));
-        
-        console.log("Sales data (sorted):", sortedSales);
         setSales(sortedSales);
       } catch (err) {
-        console.log("Sales fetch error:", err);
         setErrorSales(err.message);
       } finally {
         setLoadingSales(false);
       }
     };
     fetchSales();
-  }, [lastSaleReceipt]); // Ajout de lastSaleReceipt pour rafraîchir le tableau des ventes
+  }, [lastSaleReceipt]);
 
-  // Filtered Products for the Products Grid
   const filteredProducts = products.filter((p) =>
-    p.quantity > 0 && // Masquer les produits avec quantité 0 ou moins
+    p.quantity > 0 && 
     p.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Filtered Sales for the Sales Table
   const filteredSales = sales.filter((sale) => {
     const lowerCaseQuery = salesSearchQuery.toLowerCase();
     const productNameMatch = sale.productName.toLowerCase().includes(lowerCaseQuery);
@@ -227,26 +205,25 @@ export default function Produits() {
   );
 
   const handleAddToCart = (product) => {
-    if (product.quantity <= 0) return; // Empêcher l'ajout d'articles épuisés
+    if (product.quantity <= 0) return;
     setCart((prev) => {
       const existing = prev.find((i) => i.id === product.id);
       if (existing) {
-        // Empêcher d'ajouter plus que le stock disponible
-        const newQuantity = existing.quantity + 1; // Corrected variable usage
+        const newQuantity = existing.quantity + 1;
         if (newQuantity > product.quantity) return prev; 
         
-        return prev.map((item) => // Changed loop variable to 'item' for clarity
+        return prev.map((item) => 
           item.id === product.id ? { ...item, quantity: newQuantity } : item
         );
       }
       return [...prev, { ...product, quantity: 1 }];
     });
     setDrawerOpen(true);
-    setCheckoutMessage(""); // Vider le message de statut précédent
+    setCheckoutMessage("");
   };
 
   const handleRemoveFromCart = (productId) => {
-    setCart((prev) => prev.filter((item) => item.id !== productId)); // Changed loop variable to 'item' for clarity
+    setCart((prev) => prev.filter((item) => item.id !== productId));
   };
 
   const clearCart = () => setCart([]);
@@ -256,7 +233,6 @@ export default function Produits() {
     setCheckoutLoading(true);
     setCheckoutMessage("");
 
-    // 1. Sauvegarder les détails du panier pour le reçu AVANT de vider le panier
     const totalVente = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
     const detailsRecu = cart.map(item => ({
         id: item.id,
@@ -265,14 +241,13 @@ export default function Produits() {
         price: item.price,
     }));
 
-
     try {
       const token = localStorage.getItem("token");
       const headers = {
         "Content-Type": "application/json",
         ...(token && { Authorization: `Bearer ${token}` }),
       };
-      const saleItems = cart.map((item) => ({ // Changed loop variable to 'item' for clarity
+      const saleItems = cart.map((item) => ({
         productId: item.id,
         quantitySold: item.quantity,
       }));
@@ -284,21 +259,16 @@ export default function Produits() {
       });
 
       const responseText = await response.text();
-
       if (!response.ok) throw new Error(`Échec du traitement de la vente : ${responseText}`);
       
-      // 2. Traitement Post-Vente Réussi
       setCheckoutMessage("Vente complétée avec succès !");
-      setCart([]); // Vider le panier
-      setDrawerOpen(false); // Fermer le tiroir
+      setCart([]);
+      setDrawerOpen(false);
       
-      // Stocker les infos du reçu et ouvrir la modale d'impression
       setLastSaleReceipt({ cartDetails: detailsRecu, total: totalVente });
       setIsReceiptModalOpen(true);
 
-      // Refetch des produits et des ventes pour mettre à jour l'état du stock et le tableau des ventes
       const refetchData = async () => {
-        // Récupérer les produits (pour mettre à jour le stock)
         try {
           const token = localStorage.getItem("token");
           const headers = token ? { Authorization: `Bearer ${token}` } : {};
@@ -308,10 +278,9 @@ export default function Produits() {
             setProducts(productData);
           }
         } catch (err) {
-          console.error("Erreur de rafraîchissement des produits:", err);
+          // Error handled silently for production
         }
         
-        // Récupérer les ventes (pour mettre à jour le tableau)
         try {
           const token = localStorage.getItem("token");
           const headers = token ? { Authorization: `Bearer ${token}` } : {};
@@ -322,30 +291,25 @@ export default function Produits() {
             setSales(sortedSales);
           }
         } catch (err) {
-          console.error("Erreur de rafraîchissement des ventes:", err);
+          // Error handled silently for production
         }
       };
       refetchData();
 
-
     } catch (err) {
-      console.log("Checkout error:", err);
       setCheckoutMessage(`Erreur: ${err.message}`);
     } finally {
       setCheckoutLoading(false);
     }
   };
 
-  // Calculate total sales
   const totalSales = sales.reduce((sum, sale) => sum + (sale.totalAmount || 0), 0);
 
   return (
     <div className="flex flex-col gap-4 p-2 sm:p-4 bg-gray-50 min-h-screen relative">
-      {/* ------------------- SECTION PRODUITS ------------------- */}
       <h1 className="text-3xl font-bold text-gray-900 mb-2 border-b border-gray-200 pb-2">Point De Vente (PDV)</h1>
       
       <div className="bg-white rounded-2xl shadow-xl p-4 sm:p-6 flex flex-col">
-        {/* Titre + Recherche */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-5 gap-4 border-b border-gray-100 pb-4">
           <h2 className="text-2xl font-semibold text-gray-800">Articles en Stock ({filteredProducts.length})</h2>
           <div className="relative w-full sm:max-w-xs">
@@ -362,11 +326,9 @@ export default function Produits() {
           </div>
         </div>
 
-        {/* Chargement/Erreurs */}
         {loading && <p className="text-center py-10 text-gray-500 text-base">Chargement des produits...</p>}
         {error && <p className="text-center py-10 text-red-600 text-base">Erreur : {error}</p>}
 
-        {/* Grille de Produits */}
         {!loading && !error && (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5 grow">
             {paginatedProducts.map((p) => {
@@ -382,7 +344,6 @@ export default function Produits() {
                   }`}
                   whileHover={{ scale: 1.02 }}
                 >
-                  {/* Image Placeholder */}
                   <img
                     src={`https://placehold.co/100x100/34D399/FFFFFF?text=${p.name.split(' ').map(n => n[0]).join('')}`}
                     alt={p.name}
@@ -391,7 +352,6 @@ export default function Produits() {
                   <h3 className="font-bold text-gray-900 text-base truncate w-full">{p.name}</h3>
                   <p className="text-emerald-900 text-s font-bold mt-1">FC {p.price ? formatNumber(p.price) : '0.00'}</p>
                   
-                  {/* Statut du Stock */}
                   <p
                     className={`px-3 py-1 rounded-full text-xs font-semibold mt-2 ${
                       isSoldOut ? 'bg-red-100 text-red-700' : (p.quantity < 5 ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700')
@@ -421,7 +381,6 @@ export default function Produits() {
           </div>
         )}
 
-        {/* Pagination */}
         {!loading && !error && filteredProducts.length > 0 && totalPages > 1 && (
           <div className="flex justify-center items-center mt-8 gap-3">
             <button
@@ -443,12 +402,10 @@ export default function Produits() {
         )}
       </div>
 
-      {/* ------------------- SECTION HISTORIQUE DES VENTES ------------------- */}
       <div className="bg-white rounded-2xl shadow-xl p-4 sm:p-6 overflow-x-auto mt-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-5 gap-4 border-b border-gray-100 pb-4">
           <h2 className="text-2xl font-semibold text-gray-800">Historique des Ventes</h2>
           <div className="flex flex-col sm:flex-row items-end sm:items-center gap-4 w-full sm:w-auto">
-            {/* Barre de Recherche des Ventes */}
             <div className="relative w-full sm:max-w-xs">
               <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
               <input
@@ -459,7 +416,6 @@ export default function Produits() {
                 value={salesSearchQuery}
               />
             </div>
-            {/* Affichage du Total des Ventes */}
             <div className="bg-emerald-100 text-emerald-800 px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap">
               Total Ventes: FC {formatNumber(totalSales)}
             </div>
@@ -482,7 +438,7 @@ export default function Produits() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-100">
-              {filteredSales.slice(0, 10).map((sale, index) => { // Limité aux 10 dernières ventes
+              {filteredSales.slice(0, 10).map((sale, index) => {
                 const saleDate = new Date(sale.saleDate);
                 const date = saleDate.toLocaleDateString('fr-FR');
                 const time = saleDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
@@ -507,8 +463,6 @@ export default function Produits() {
         )}
       </div>
 
-
-      {/* ------------------- TIROIR (DRAWER) PANIER / DÉTAILS ------------------- */}
       <AnimatePresence>
         {drawerOpen && (
           <motion.div
@@ -609,7 +563,6 @@ export default function Produits() {
         )}
       </AnimatePresence>
 
-      {/* Flottant Icone Panier */}
       {cart.length > 0 && (
         <motion.div
           initial={{ scale: 0 }}
@@ -625,7 +578,6 @@ export default function Produits() {
         </motion.div>
       )}
 
-      {/* Modale d'Impression (Déclenchée après le checkout réussi) */}
       {isReceiptModalOpen && lastSaleReceipt && (
         <RecuModal
           isOpen={isReceiptModalOpen}

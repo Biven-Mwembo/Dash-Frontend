@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Download, Plus, Edit, Trash, X } from "lucide-react";
 
 // Note: Replace with your actual deployed API URL in production
-const API_BASE_URL = "https://localhost:7052"; 
+const API_BASE_URL = "https://dash-backend-1-60mf.onrender.com"; 
 
 export default function Produits() {
   const [showForm, setShowForm] = useState(false);
