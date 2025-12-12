@@ -1,6 +1,7 @@
 [build]
+  base    = "Project Folder"  # <--- ADD THIS LINE
   command = "npm run build"
-  publish = "dist"
+  publish = "Project Folder/dist" # <--- IMPORTANT: Update the publish path
 
 [[redirects]]
   from = "/*"
