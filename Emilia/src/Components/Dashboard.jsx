@@ -13,8 +13,8 @@ import {
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 // ✅ Centralized API URL import
-import API_BASE_URL from "../../apiConfig";
 
+const API_BASE_URL = "https://dash-backend-1-60mf.onrender.com"; 
 // --- Composant de Réception pour l'Impression ---
 const ComponentRecu = React.forwardRef(({ cartDetails, total }, ref) => {
   const formatNumber = (num) => {
