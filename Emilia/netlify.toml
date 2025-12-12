@@ -1,7 +1,7 @@
 [build]
   base    = "Emilia"  # <--- ADD THIS LINE
   command = "npm run build"
-  publish = "Project Folder/dist" # <--- IMPORTANT: Update the publish path
+  publish = "Emilia/dist" # <--- IMPORTANT: Update the publish path
 
 [[redirects]]
   from = "/*"
