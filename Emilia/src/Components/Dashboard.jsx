@@ -12,9 +12,10 @@ import {
   Printer,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
-// ✅ Centralized API URL import
 
-const API_BASE_URL = "https://dash-backend-1-60mf.onrender.com"; 
+// ✅ Centralized API URL import
+const API_BASE_URL = "https://dash-backend-1-60mf.onrender.com";
+
 // --- Composant de Réception pour l'Impression ---
 const ComponentRecu = React.forwardRef(({ cartDetails, total }, ref) => {
   const formatNumber = (num) => {
@@ -143,14 +144,42 @@ export default function Produits() {
     return dateObj.toLocaleDateString('fr-FR');
   };
 
+  // Helper: Get token and check if valid
+  const getAuthToken = () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setError("Veuillez vous connecter pour accéder aux produits.");
+      setErrorSales("Veuillez vous connecter pour accéder aux ventes.");
+      return null;
+    }
+    return token;
+  };
+
+  // Helper: Handle 401 errors
+  const handleAuthError = (setErrorFunc) => {
+    localStorage.removeItem("token"); // Clear invalid token
+    setErrorFunc("Session expirée. Veuillez vous reconnecter.");
+    // Optional: Redirect to login page (uncomment if you have a login route)
+    // window.location.href = "/login";
+  };
+
   useEffect(() => {
     const fetchProducts = async () => {
       setLoading(true);
       setError(null);
+      const token = getAuthToken();
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+
       try {
-        const token = localStorage.getItem("token");
-        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const headers = { Authorization: `Bearer ${token}` };
         const response = await fetch(`${API_BASE_URL}/api/products`, { headers });
+        if (response.status === 401) {
+          handleAuthError(setError);
+          return;
+        }
         if (!response.ok) throw new Error("Échec de la récupération des produits");
         const data = await response.json();
         setProducts(data);
@@ -167,10 +196,19 @@ export default function Produits() {
     const fetchSales = async () => {
       setLoadingSales(true);
       setErrorSales(null);
+      const token = getAuthToken();
+      if (!token) {
+        setLoadingSales(false);
+        return;
+      }
+
       try {
-        const token = localStorage.getItem("token");
-        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const headers = { Authorization: `Bearer ${token}` };
         const response = await fetch(`${API_BASE_URL}/api/products/sales`, { headers });
+        if (response.status === 401) {
+          handleAuthError(setErrorSales);
+          return;
+        }
         if (!response.ok) throw new Error("Échec de la récupération des ventes");
         const data = await response.json();
         
@@ -241,11 +279,17 @@ export default function Produits() {
         price: item.price,
     }));
 
+    const token = getAuthToken();
+    if (!token) {
+      setCheckoutMessage("Erreur: Veuillez vous connecter pour finaliser la vente.");
+      setCheckoutLoading(false);
+      return;
+    }
+
     try {
-      const token = localStorage.getItem("token");
       const headers = {
         "Content-Type": "application/json",
-        ...(token && { Authorization: `Bearer ${token}` }),
+        Authorization: `Bearer ${token}`,
       };
       const saleItems = cart.map((item) => ({
         productId: item.id,
@@ -258,6 +302,11 @@ export default function Produits() {
         body: JSON.stringify(saleItems),
       });
 
+      if (response.status === 401) {
+        handleAuthError(() => setCheckoutMessage("Session expirée. Veuillez vous reconnecter."));
+        return;
+      }
+
       const responseText = await response.text();
       if (!response.ok) throw new Error(`Échec du traitement de la vente : ${responseText}`);
       
@@ -269,9 +318,11 @@ export default function Produits() {
       setIsReceiptModalOpen(true);
 
       const refetchData = async () => {
+        const token = getAuthToken();
+        if (!token) return;
+
         try {
-          const token = localStorage.getItem("token");
-          const headers = token ? { Authorization: `Bearer ${token}` } : {};
+          const headers = { Authorization: `Bearer ${token}` };
           const productResponse = await fetch(`${API_BASE_URL}/api/products`, { headers });
           if (productResponse.ok) {
             const productData = await productResponse.json();
@@ -282,8 +333,7 @@ export default function Produits() {
         }
         
         try {
-          const token = localStorage.getItem("token");
-          const headers = token ? { Authorization: `Bearer ${token}` } : {};
+          const headers = { Authorization: `Bearer ${token}` };
           const salesResponse = await fetch(`${API_BASE_URL}/api/products/sales`, { headers });
           if (salesResponse.ok) {
             const salesData = await salesResponse.json();
@@ -367,7 +417,7 @@ export default function Produits() {
                   <button
                     onClick={() => handleAddToCart(p)}
                     disabled={isSoldOut || isMaxQuantity}
-                    className={`mt-4 flex items-center justify-center gap-2 text-sm font-medium w-full px-3 py-2 rounded-xl transition ${
+                                       className={`mt-4 flex items-center justify-center gap-2 text-sm font-medium w-full px-3 py-2 rounded-xl transition ${
                       isSoldOut || isMaxQuantity
                         ? 'bg-gray-300 text-gray-600 cursor-not-allowed opacity-70'
                         : 'bg-emerald-600 hover:bg-emerald-700 text-white'
