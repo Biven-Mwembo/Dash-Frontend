@@ -14,7 +14,7 @@ import {
 import { AnimatePresence, motion } from "framer-motion";
 
 // ✅ Centralized API URL import
-const API_BASE_URL = "https://dash-backend-1-60mf.onrender.com";
+const API_BASE_URL = "https://dash-backend-1-60mf.onrender.com/api";
 
 // --- Composant de Réception pour l'Impression ---
 const ComponentRecu = React.forwardRef(({ cartDetails, total }, ref) => {
@@ -175,7 +175,7 @@ export default function Produits() {
 
       try {
         const headers = { Authorization: `Bearer ${token}` };
-        const response = await fetch(`${API_BASE_URL}/api/products`, { headers });
+        const response = await fetch(`${API_BASE_URL}/products`, { headers });
         if (response.status === 401) {
           handleAuthError(setError);
           return;
@@ -204,7 +204,7 @@ export default function Produits() {
 
       try {
         const headers = { Authorization: `Bearer ${token}` };
-        const response = await fetch(`${API_BASE_URL}/api/products/sales`, { headers });
+        const response = await fetch(`${API_BASE_URL}/products/sales`, { headers });
         if (response.status === 401) {
           handleAuthError(setErrorSales);
           return;
@@ -223,14 +223,16 @@ export default function Produits() {
     fetchSales();
   }, [lastSaleReceipt]);
 
+  // ✅ Fixed: Added ?. for safe access to prevent toLowerCase error
   const filteredProducts = products.filter((p) =>
     p.quantity > 0 && 
-    p.name.toLowerCase().includes(searchQuery.toLowerCase())
+    p.name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // ✅ Fixed: Added ?. for safe access to prevent toLowerCase error
   const filteredSales = sales.filter((sale) => {
     const lowerCaseQuery = salesSearchQuery.toLowerCase();
-    const productNameMatch = sale.productName.toLowerCase().includes(lowerCaseQuery);
+    const productNameMatch = sale.productName?.toLowerCase().includes(lowerCaseQuery);
     const dateMatch = formatDateForSearch(sale.saleDate).includes(lowerCaseQuery);
 
     return productNameMatch || dateMatch;
@@ -296,7 +298,7 @@ export default function Produits() {
         quantitySold: item.quantity,
       }));
       
-      const response = await fetch(`${API_BASE_URL}/api/products/sale`, {
+      const response = await fetch(`${API_BASE_URL}/products/sale`, {
         method: "POST",
         headers,
         body: JSON.stringify(saleItems),
@@ -323,7 +325,7 @@ export default function Produits() {
 
         try {
           const headers = { Authorization: `Bearer ${token}` };
-          const productResponse = await fetch(`${API_BASE_URL}/api/products`, { headers });
+          const productResponse = await fetch(`${API_BASE_URL}/products`, { headers });
           if (productResponse.ok) {
             const productData = await productResponse.json();
             setProducts(productData);
@@ -334,7 +336,7 @@ export default function Produits() {
         
         try {
           const headers = { Authorization: `Bearer ${token}` };
-          const salesResponse = await fetch(`${API_BASE_URL}/api/products/sales`, { headers });
+          const salesResponse = await fetch(`${API_BASE_URL}/products/sales`, { headers });
           if (salesResponse.ok) {
             const salesData = await salesResponse.json();
             const sortedSales = salesData.sort((a, b) => new Date(b.saleDate) - new Date(a.saleDate));
@@ -417,7 +419,7 @@ export default function Produits() {
                   <button
                     onClick={() => handleAddToCart(p)}
                     disabled={isSoldOut || isMaxQuantity}
-                                       className={`mt-4 flex items-center justify-center gap-2 text-sm font-medium w-full px-3 py-2 rounded-xl transition ${
+                    className={`mt-4 flex items-center justify-center gap-2 text-sm font-medium w-full px-3 py-2 rounded-xl transition ${
                       isSoldOut || isMaxQuantity
                         ? 'bg-gray-300 text-gray-600 cursor-not-allowed opacity-70'
                         : 'bg-emerald-600 hover:bg-emerald-700 text-white'
