@@ -18,7 +18,7 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const res = await fetch(`${API_BASE_URL}/api/auth/login`, {  // ✅ Fixed: Added /api/ to match backend route
+      const res = await fetch(`${API_BASE_URL}/auth/login`, {  // ✅ Fixed: Removed extra /api/ since API_BASE_URL already includes it
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
