@@ -1,7 +1,7 @@
 import { useState } from "react";
 import logo from "../../assets/dash.svg";
 import PageWrapper from "../PageWrapper";
-import API_BASE_URL from "../../apiConfig";
+import { supabase } from "../../supabaseClient"; // Ensure this points to your supabase config
 
 export default function Login() {
   const [form, setForm] = useState({ email: "", password: "" });
@@ -18,29 +18,25 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const res = await fetch(`${API_BASE_URL}/auth/login`, {  // ✅ Fixed: Removed extra /api/ since API_BASE_URL already includes it
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+      // ✅ Use Supabase directly to get a valid token
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: form.email,
+        password: form.password,
       });
 
-      const data = await res.json();
-
-      if (res.ok && data.token) {
-        localStorage.setItem("token", data.token);
+      if (error) {
+        setMessage(error.message);
+      } else if (data?.session) {
+        // ✅ Save the Supabase JWT
+        localStorage.setItem("token", data.session.access_token);
         setMessage("Connexion réussie ! Redirection...");
+        
         setTimeout(() => {
           window.location.href = "/dashboard";
         }, 1000);
-      } else if (res.status === 401) {
-        setMessage("Email ou mot de passe incorrect.");
-      } else if (res.status === 500) {
-        setMessage("Erreur serveur. Réessayez plus tard.");
-      } else {
-        setMessage(data?.message || "Échec de la connexion.");
       }
     } catch (err) {
-      setMessage("Erreur réseau : " + err.message);
+      setMessage("Erreur de connexion : " + err.message);
     } finally {
       setLoading(false);
     }
@@ -72,7 +68,7 @@ export default function Login() {
               placeholder="Email"
               value={form.email}
               onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 text-gray-900 placeholder-gray-400"
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 text-gray-900"
               required
             />
             <input
@@ -81,7 +77,7 @@ export default function Login() {
               placeholder="Mot de passe"
               value={form.password}
               onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 text-gray-900 placeholder-gray-400"
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 text-gray-900"
               required
             />
             <button
@@ -94,8 +90,7 @@ export default function Login() {
             {loading && <Spinner />}
           </form>
           <p className="text-center mt-4 text-gray-700">
-            Pas de compte ?{" "}
-            <a href="/signup" className="text-blue-600 hover:underline">S'inscrire</a>
+            Pas de compte ? <a href="/signup" className="text-blue-600 hover:underline">S'inscrire</a>
           </p>
         </div>
       </div>
