@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-token';
+import { createClient } from '@supabase/supabase-js';
 
 // These should be replaced by your actual keys from the Supabase Dashboard
 // Settings -> API
