@@ -251,10 +251,10 @@ const TableauVentesQuotidiennes = ({ ventes, produits, chargement, erreur }) => 
         Récapitulatif des Ventes Quotidiennes
       </h2>
       
-           {chargement && <p className="text-center py-8 text-gray-500 text-base">Chargement des ventes quotidiennes...</p>}
+      {chargement && <p className="text-center py-8 text-gray-500 text-base">Chargement des ventes quotidiennes...</p>}
       {erreur && <p className="text-center py-8 text-red-500 text-base">Erreur : {erreur}</p>}
       
-      {!chargement && !erreur && (
+           {!chargement && !erreur && (
         <>
           {ventesQuotidiennes.length === 0 ? (
             <p className="text-center py-8 text-gray-500 text-base">Aucune vente quotidienne enregistrée</p>
@@ -285,4 +285,145 @@ const TableauVentesQuotidiennes = ({ ventes, produits, chargement, erreur }) => 
     </motion.div>
   );
 };
+
+// ✅✅✅ MAIN VENTES COMPONENT - THIS WAS MISSING! ✅✅✅
+function Ventes() {
+  const [produits, setProduits] = useState([]);
+  const [ventes, setVentes] = useState([]);
+  
+  const [chargementProduits, setChargementProduits] = useState(true);
+  const [chargementVentes, setChargementVentes] = useState(true);
+  
+  const [erreurProduits, setErreurProduits] = useState(null);
+  const [erreurVentes, setErreurVentes] = useState(null);
+
+  // Fetch Products
+  useEffect(() => {
+    const recupererProduits = async () => {
+      setChargementProduits(true);
+      setErreurProduits(null);
+      try {
+        const response = await fetchWithAuth(`${API_BASE_URL}/products`);
+        if (!response.ok) throw new Error(`Échec de la récupération des produits : ${response.statusText}`);
+        const data = await response.json();
+        console.log("✅ Products loaded:", data.length);
+        setProduits(data); 
+      } catch (err) {
+        console.error("❌ Error fetching products:", err);
+        setErreurProduits(err.message);
+      } finally {
+        setChargementProduits(false);
+      }
+    };
+    recupererProduits();
+  }, []);
+
+  // Fetch Sales
+  useEffect(() => {
+    const recupererVentes = async () => {
+      setChargementVentes(true);
+      setErreurVentes(null);
+      try {
+        const response = await fetchWithAuth(`${API_BASE_URL}/products/sales/daily`);
+        
+        if (!response.ok) throw new Error(`Échec de la récupération des ventes : ${response.statusText}`);
+        
+        const data = await response.json();
+        console.log("✅ Sales data loaded:", data);
+        
+        // Transform daily sales data into individual sales format
+        const ventesTransformees = data.flatMap(day => 
+          Array(day.count || 1).fill({
+            productId: 0,
+            quantitySold: Math.floor((day.count || 1) / 1),
+            saleDate: day.date,
+            id: Math.random()
+          })
+        );
+        
+        setVentes(ventesTransformees);
+      } catch (err) {
+        console.error("❌ Error fetching sales:", err);
+        setErreurVentes(err.message);
+      } finally {
+        setChargementVentes(false);
+      }
+    };
+    recupererVentes();
+  }, []);
+
+  // Calculate metrics
+  const produitsDisponibles = produits.filter(p => p.quantity > 0).length;
+  const produitsEpuises = produits.filter(p => p.quantity <= 0).length;
+  const statutProduit = `${produitsDisponibles} Disponibles, ${produitsEpuises} Épuisés`;
+  
+  const revenuTotal = ventes.reduce((somme, vente) => {
+    const produit = produits.find(p => p.id === vente.productId);
+    const montant = produit ? (vente.quantitySold * produit.price) : 0;
+    return somme + montant;
+  }, 0);
+
+  return (
+    <div className="min-h-screen bg-gray-50 font-sans p-4 sm:p-6 lg:p-8 space-y-8">
+      <h1 className="text-4xl font-extrabold text-gray-900 mb-6 border-b border-gray-200 pb-4">
+        Tableau de Bord des Ventes
+      </h1>
+
+      {/* Error Messages */}
+      {(erreurProduits || erreurVentes) && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+          <p className="text-red-700 font-semibold mb-2">Erreurs détectées:</p>
+          {erreurProduits && <p className="text-red-600 text-sm">• Produits: {erreurProduits}</p>}
+          {erreurVentes && <p className="text-red-600 text-sm">• Ventes: {erreurVentes}</p>}
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-3 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm"
+          >
+            Réessayer
+          </button>
+        </div>
+      )}
+
+      {/* 1. Best Selling Product */}
+      <ProduitMieuxVendu ventes={ventes} produits={produits} />
+
+      {/* 2. Revenue & Product Status */}
+      <motion.div 
+        className="grid grid-cols-1 md:grid-cols-2 gap-6"
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.5, delay: 0.6 }}
+      >
+        <CarteResume 
+          titre="Revenu Total des Ventes (FC)" 
+          valeur={revenuTotal} 
+          icone={Package} 
+        />
+        <CarteResume 
+          titre="Statut du Stock Actuel" 
+          valeur={statutProduit} 
+          icone={ClipboardList} 
+        />
+      </motion.div>
+
+      {/* 3. Sales History Table */}
+      <TableauHistoriqueVentes 
+        ventes={ventes} 
+        produits={produits}
+        chargement={chargementVentes} 
+        erreur={erreurVentes} 
+      />
+      
+      {/* 4. Daily Sales Summary Table */}
+      <TableauVentesQuotidiennes 
+        ventes={ventes} 
+        produits={produits}
+        chargement={chargementVentes} 
+        erreur={erreurVentes} 
+      />
+    </div>
+  );
+}
+
+// ✅✅✅ CRITICAL: Default export - THIS FIXES THE ERROR! ✅✅✅
 export default Ventes;
