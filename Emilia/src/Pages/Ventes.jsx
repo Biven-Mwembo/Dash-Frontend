@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Package, ClipboardList } from "lucide-react";
 import { motion } from "framer-motion";
-import API_BASE_URL, { fetchWithAuth } from "../../apiConfig";
+import API_BASE_URL, { fetchWithAuth } from "../apiConfig";
 
 // --- Summary Card Component ---
 const CarteResume = ({ titre, valeur, icone: Icone }) => {

@@ -12,7 +12,7 @@ import {
   Printer,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
-import API_BASE_URL, { fetchWithAuth } from "../../apiConfig";
+import API_BASE_URL, { fetchWithAuth } from "../apiConfig";
 
 // --- Receipt Component ---
 const ComponentRecu = React.forwardRef(({ cartDetails, total }, ref) => {
