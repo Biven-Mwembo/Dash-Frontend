@@ -285,3 +285,4 @@ const TableauVentesQuotidiennes = ({ ventes, produits, chargement, erreur }) => 
     </motion.div>
   );
 };
+export default Ventes;
