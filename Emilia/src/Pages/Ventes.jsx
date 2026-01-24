@@ -130,7 +130,6 @@ const TableauHistoriqueVentes = ({ ventes, produits, chargement, erreur }) => {
     return num ? num.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, " ") : '0.00';
   };
 
-  // Calculate total sales amount
   const totalVentes = ventes.reduce((somme, vente) => {
     const produit = produits.find(p => p.id === vente.productId);
     const montant = produit ? (vente.quantitySold * produit.price) : 0;
@@ -216,13 +215,12 @@ const TableauVentesQuotidiennes = ({ ventes, produits, chargement, erreur }) => 
     return num ? num.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, " ") : '0.00';
   };
 
-  // Group sales by date
   const ventesParJour = ventes.reduce((acc, vente) => {
     const produit = produits.find(p => p.id === vente.productId);
     const montant = produit ? (vente.quantitySold * produit.price) : 0;
     
     const dateVente = new Date(vente.saleDate);
-    const dateKey = dateVente.toISOString().split('T')[0]; // YYYY-MM-DD
+    const dateKey = dateVente.toISOString().split('T')[0];
     
     if (!acc[dateKey]) {
       acc[dateKey] = {
@@ -239,7 +237,6 @@ const TableauVentesQuotidiennes = ({ ventes, produits, chargement, erreur }) => 
     return acc;
   }, {});
 
-  // Convert to array and sort by date (most recent first)
   const ventesQuotidiennes = Object.values(ventesParJour)
     .sort((a, b) => new Date(b.date) - new Date(a.date));
 
@@ -254,7 +251,7 @@ const TableauVentesQuotidiennes = ({ ventes, produits, chargement, erreur }) => 
         Récapitulatif des Ventes Quotidiennes
       </h2>
       
-      {chargement && <p className="text-center py-8 text-gray-500 text-base">Chargement des ventes quotidiennes...</p>}
+           {chargement && <p className="text-center py-8 text-gray-500 text-base">Chargement des ventes quotidiennes...</p>}
       {erreur && <p className="text-center py-8 text-red-500 text-base">Erreur : {erreur}</p>}
       
       {!chargement && !erreur && (
