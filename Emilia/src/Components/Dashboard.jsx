@@ -1,6 +1,6 @@
 /* eslint-disable no-irregular-whitespace */
 /* eslint-disable no-unused-vars */
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   ShoppingCart,
   PlusCircle,
@@ -13,10 +13,10 @@ import {
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
-// ✅ Centralized API URL import
+// ✅ Verify this matches your Backend URL exactly
 const API_BASE_URL = "https://dash-backend-1-60mf.onrender.com/api";
 
-// --- Composant de Réception pour l'Impression ---
+// --- Composant de Réception pour l'Impression (Receipt) ---
 const ComponentRecu = React.forwardRef(({ cartDetails, total }, ref) => {
   const formatNumber = (num) => {
     return num.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
@@ -59,7 +59,7 @@ const ComponentRecu = React.forwardRef(({ cartDetails, total }, ref) => {
 
 // --- Composant Modale de Confirmation d'Impression ---
 const RecuModal = ({ isOpen, onClose, cartDetails, total }) => {
-  const receiptRef = React.useRef();
+  const receiptRef = useRef();
 
   const handlePrint = () => {
     window.print();
@@ -144,43 +144,42 @@ export default function Produits() {
     return dateObj.toLocaleDateString('fr-FR');
   };
 
-  // Helper: Get token and check if valid
+  // ✅ Helper: Get token or Redirect
   const getAuthToken = () => {
     const token = localStorage.getItem("token");
     if (!token) {
-      setError("Veuillez vous connecter pour accéder aux produits.");
-      setErrorSales("Veuillez vous connecter pour accéder aux ventes.");
+      window.location.href = "/"; // Force redirect to login
       return null;
     }
     return token;
   };
 
-  // Helper: Handle 401 errors
-  const handleAuthError = (setErrorFunc) => {
-    localStorage.removeItem("token"); // Clear invalid token
-    setErrorFunc("Session expirée. Veuillez vous reconnecter.");
-    // Optional: Redirect to login page (uncomment if you have a login route)
-    // window.location.href = "/login";
+  // ✅ Helper: Handle 401 Unauthorized
+  const handleAuthError = () => {
+    localStorage.removeItem("token"); 
+    window.location.href = "/"; // Force redirect to login
   };
 
+  // --- Fetch Products ---
   useEffect(() => {
     const fetchProducts = async () => {
       setLoading(true);
       setError(null);
+      
       const token = getAuthToken();
-      if (!token) {
-        setLoading(false);
-        return;
-      }
+      if (!token) return;
 
       try {
         const headers = { Authorization: `Bearer ${token}` };
+        // Calls: ProductsController.GetProducts
         const response = await fetch(`${API_BASE_URL}/products`, { headers });
+        
         if (response.status === 401) {
-          handleAuthError(setError);
+          handleAuthError();
           return;
         }
         if (!response.ok) throw new Error("Échec de la récupération des produits");
+        
         const data = await response.json();
         setProducts(data);
       } catch (err) {
@@ -190,28 +189,29 @@ export default function Produits() {
       }
     };
     fetchProducts();
-  }, [lastSaleReceipt]);
+  }, [lastSaleReceipt]); // Reload when a sale happens
 
+  // --- Fetch Sales History ---
   useEffect(() => {
     const fetchSales = async () => {
       setLoadingSales(true);
       setErrorSales(null);
+      
       const token = getAuthToken();
-      if (!token) {
-        setLoadingSales(false);
-        return;
-      }
+      if (!token) return;
 
       try {
         const headers = { Authorization: `Bearer ${token}` };
+        // Calls: ProductsController.GetProductSales
         const response = await fetch(`${API_BASE_URL}/products/sales`, { headers });
+        
         if (response.status === 401) {
-          handleAuthError(setErrorSales);
+          handleAuthError();
           return;
         }
         if (!response.ok) throw new Error("Échec de la récupération des ventes");
-        const data = await response.json();
         
+        const data = await response.json();
         const sortedSales = data.sort((a, b) => new Date(b.saleDate) - new Date(a.saleDate));
         setSales(sortedSales);
       } catch (err) {
@@ -223,19 +223,19 @@ export default function Produits() {
     fetchSales();
   }, [lastSaleReceipt]);
 
-  // ✅ Fixed: Added ?. for safe access to prevent toLowerCase error
+  // Safe filtering logic
   const filteredProducts = products.filter((p) =>
     p.quantity > 0 && 
     p.name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // ✅ Fixed: Added ?. for safe access to prevent toLowerCase error
   const filteredSales = sales.filter((sale) => {
+    // Note: C# DTO returns 'ProductId', not Name. If you want Name here, 
+    // you need to join tables in backend or look it up here.
+    // This filter searches dates mostly, or simple matches.
     const lowerCaseQuery = salesSearchQuery.toLowerCase();
-    const productNameMatch = sale.productName?.toLowerCase().includes(lowerCaseQuery);
     const dateMatch = formatDateForSearch(sale.saleDate).includes(lowerCaseQuery);
-
-    return productNameMatch || dateMatch;
+    return dateMatch || (sale.id && sale.id.toString().includes(lowerCaseQuery));
   });
 
   const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
@@ -244,6 +244,7 @@ export default function Produits() {
     currentPage * productsPerPage
   );
 
+  // --- Cart Actions ---
   const handleAddToCart = (product) => {
     if (product.quantity <= 0) return;
     setCart((prev) => {
@@ -268,6 +269,7 @@ export default function Produits() {
 
   const clearCart = () => setCart([]);
 
+  // --- Checkout Process ---
   const handleCheckout = async () => {
     if (cart.length === 0) return;
     setCheckoutLoading(true);
@@ -283,7 +285,6 @@ export default function Produits() {
 
     const token = getAuthToken();
     if (!token) {
-      setCheckoutMessage("Erreur: Veuillez vous connecter pour finaliser la vente.");
       setCheckoutLoading(false);
       return;
     }
@@ -293,11 +294,14 @@ export default function Produits() {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       };
+      
       const saleItems = cart.map((item) => ({
         productId: item.id,
         quantitySold: item.quantity,
       }));
       
+      // ⚠️ Make sure you have a controller for this POST endpoint in C#
+      // e.g. [HttpPost("sale")] in ProductsController
       const response = await fetch(`${API_BASE_URL}/products/sale`, {
         method: "POST",
         headers,
@@ -305,12 +309,12 @@ export default function Produits() {
       });
 
       if (response.status === 401) {
-        handleAuthError(() => setCheckoutMessage("Session expirée. Veuillez vous reconnecter."));
+        handleAuthError();
         return;
       }
 
       const responseText = await response.text();
-      if (!response.ok) throw new Error(`Échec du traitement de la vente : ${responseText}`);
+      if (!response.ok) throw new Error(`Échec: ${responseText || response.statusText}`);
       
       setCheckoutMessage("Vente complétée avec succès !");
       setCart([]);
@@ -318,35 +322,6 @@ export default function Produits() {
       
       setLastSaleReceipt({ cartDetails: detailsRecu, total: totalVente });
       setIsReceiptModalOpen(true);
-
-      const refetchData = async () => {
-        const token = getAuthToken();
-        if (!token) return;
-
-        try {
-          const headers = { Authorization: `Bearer ${token}` };
-          const productResponse = await fetch(`${API_BASE_URL}/products`, { headers });
-          if (productResponse.ok) {
-            const productData = await productResponse.json();
-            setProducts(productData);
-          }
-        } catch (err) {
-          // Error handled silently for production
-        }
-        
-        try {
-          const headers = { Authorization: `Bearer ${token}` };
-          const salesResponse = await fetch(`${API_BASE_URL}/products/sales`, { headers });
-          if (salesResponse.ok) {
-            const salesData = await salesResponse.json();
-            const sortedSales = salesData.sort((a, b) => new Date(b.saleDate) - new Date(a.saleDate));
-            setSales(sortedSales);
-          }
-        } catch (err) {
-          // Error handled silently for production
-        }
-      };
-      refetchData();
 
     } catch (err) {
       setCheckoutMessage(`Erreur: ${err.message}`);
@@ -361,6 +336,7 @@ export default function Produits() {
     <div className="flex flex-col gap-4 p-2 sm:p-4 bg-gray-50 min-h-screen relative">
       <h1 className="text-3xl font-bold text-gray-900 mb-2 border-b border-gray-200 pb-2">Point De Vente (PDV)</h1>
       
+      {/* Product Grid */}
       <div className="bg-white rounded-2xl shadow-xl p-4 sm:p-6 flex flex-col">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-5 gap-4 border-b border-gray-100 pb-4">
           <h2 className="text-2xl font-semibold text-gray-800">Articles en Stock ({filteredProducts.length})</h2>
@@ -433,6 +409,7 @@ export default function Produits() {
           </div>
         )}
 
+        {/* Pagination */}
         {!loading && !error && filteredProducts.length > 0 && totalPages > 1 && (
           <div className="flex justify-center items-center mt-8 gap-3">
             <button
@@ -454,6 +431,7 @@ export default function Produits() {
         )}
       </div>
 
+      {/* Sales History */}
       <div className="bg-white rounded-2xl shadow-xl p-4 sm:p-6 overflow-x-auto mt-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-5 gap-4 border-b border-gray-100 pb-4">
           <h2 className="text-2xl font-semibold text-gray-800">Historique des Ventes</h2>
@@ -462,14 +440,14 @@ export default function Produits() {
               <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
               <input
                 type="text"
-                placeholder="Rech. produit/date (ex: 1/10/2023)"
+                placeholder="Rech. par date (ex: 1/10/2023)"
                 className="w-full border border-gray-300 text-gray-900 rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm transition duration-200"
                 onChange={(e) => setSalesSearchQuery(e.target.value)}
                 value={salesSearchQuery}
               />
             </div>
             <div className="bg-emerald-100 text-emerald-800 px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap">
-              Total Ventes: FC {formatNumber(totalSales)}
+              Ventes affichées
             </div>
           </div>
         </div>
@@ -481,10 +459,8 @@ export default function Produits() {
           <table className="min-w-full divide-y divide-gray-200 text-sm">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Article Acheté</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">ID Prod</th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Qté</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Prix/Unité</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Montant Total</th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Date</th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Heure</th>
               </tr>
@@ -496,15 +472,8 @@ export default function Produits() {
                 const time = saleDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
                 return (
                   <tr key={index} className="hover:bg-gray-50 transition duration-150">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <img src={`https://placehold.co/30x30/3B82F6/ffffff?text=P`} alt={sale.productName} className="h-6 w-6 rounded-full mr-3 object-cover shadow-sm" />
-                        <span className="text-sm text-gray-800 font-medium">{sale.productName}</span>
-                      </div>
-                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800 font-medium">#{sale.productId}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{sale.quantitySold}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">FC {sale.pricePerItem ? formatNumber(sale.pricePerItem) : '0.00'}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-emerald-600">FC {sale.totalAmount ? formatNumber(sale.totalAmount) : '0.00'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{date}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{time}</td>
                   </tr>
@@ -515,6 +484,7 @@ export default function Produits() {
         )}
       </div>
 
+      {/* Shopping Cart Drawer */}
       <AnimatePresence>
         {drawerOpen && (
           <motion.div
