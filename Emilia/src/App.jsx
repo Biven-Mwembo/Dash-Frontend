@@ -8,12 +8,13 @@ import {
 import { AnimatePresence } from "framer-motion";
 import Login from "./Components/Auth/Login";
 import Signup from "./Components/Auth/Signup";
-import Dashboard from "./Components/Dashboard";
+import Users from "./Components/Users";
 import Produits from "./Pages/Produits";
 import Ventes from "./Pages/Ventes";
 import Fournisseurs from "./Pages/Fournisseurs";
 import Utilisateurs from "./Pages/Utilisateurs";
 import PageLayout from "./Components/PageLayout";
+import { Users } from "lucide-react";
 
 export function AnimatedRoutes() {
   const location = useLocation();
@@ -29,10 +30,10 @@ export function AnimatedRoutes() {
         <Route path="/" element={<Navigate to="/login" replace />} />
 
         {/* Dashboard-style routes (with sidebar + navbar) */}
-        <Route element={<PageLayout />}>
-          <Route path="/dashboard" element={<Dashboard />} />
+        <Route element={<PageLayout />}> 
           <Route path="/produits" element={<Produits />} />
           <Route path="/ventes" element={<Ventes />} />
+          <Route path="/dashboard" element={<Users />} />
           <Route path="/fournisseurs" element={<Fournisseurs />} />
           <Route path="/utilisateurs" element={<Utilisateurs />} />
         </Route>
