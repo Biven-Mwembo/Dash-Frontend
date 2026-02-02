@@ -30,9 +30,26 @@ const CarteResume = ({ titre, valeur, icone: Icone }) => {
 
 // --- Best Selling Product Component ---
 const ProduitMieuxVendu = ({ ventes, produits }) => {
-  // Logic to find the real best seller based on the sales array
+  // ✅ Add safety check
+  if (!Array.isArray(ventes) || ventes.length === 0) {
+    return (
+      <motion.div 
+        className="bg-white rounded-xl border border-gray-100 shadow-md p-6 w-full"
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+      >
+        <div className="flex justify-between items-center mb-5 border-b pb-3">
+          <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+            <TrendingUp className="text-emerald-500" /> Produit Phare
+          </h2>
+        </div>
+        <p className="text-center text-gray-500 py-4">Aucune vente enregistrée aujourd'hui</p>
+      </motion.div>
+    );
+  }
+
   const ventesProduits = ventes.reduce((acc, vente) => {
-    if (vente.productId === 0) return acc; // Skip dummy data
+    if (!vente.productId || vente.productId === 0) return acc;
     const cle = vente.productId;
     if (!acc[cle]) {
       const produit = produits.find(p => p.id === cle);
@@ -108,7 +125,7 @@ const ProduitMieuxVendu = ({ ventes, produits }) => {
 function Ventes() {
   const [produits, setProduits] = useState([]);
   const [ventes, setVentes] = useState([]);
-  const [dailySales, setDailySales] = useState([]);
+  const [dailySalesData, setDailySalesData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [erreur, setErreur] = useState(null);
 
@@ -116,31 +133,30 @@ function Ventes() {
     const fetchDashboardData = async () => {
       setLoading(true);
       try {
-        // Parallel fetching for speed
         const [prodRes, dailyRes] = await Promise.all([
           fetchWithAuth(`${API_BASE_URL}/products`),
           fetchWithAuth(`${API_BASE_URL}/products/sales/daily`)
         ]);
 
-        if (!prodRes.ok || !dailyRes.ok) throw new Error("Erreur lors de la récupération des données");
+        if (!prodRes.ok || !dailyRes.ok) {
+          throw new Error("Erreur lors de la récupération des données");
+        }
 
         const prods = await prodRes.json();
-        const daily = await dailyRes.json();
+        const dailyData = await dailyRes.json();
 
-        setProduits(prods);
-        setDailySales(daily);
+        console.log("Products:", prods);
+        console.log("Daily Sales Data:", dailyData);
 
-        // Note: In a real app, you would fetch an /api/products/sales endpoint 
-        // to get individual transactions. For now, we simulate from daily data.
-        const simulatedVentes = daily.map(d => ({
-          productId: prods[0]?.id || 1, // Fallback to first product for visualization
-          quantitySold: d.count,
-          saleDate: d.date,
-          id: Math.random()
-        }));
-        setVentes(simulatedVentes);
+        setProduits(Array.isArray(prods) ? prods : []);
+        setDailySalesData(dailyData);
+
+        // ✅ Extract the Sales array from the response object
+        const salesArray = dailyData?.sales || [];
+        setVentes(Array.isArray(salesArray) ? salesArray : []);
 
       } catch (err) {
+        console.error("Fetch error:", err);
         setErreur(err.message);
       } finally {
         setLoading(false);
@@ -150,14 +166,31 @@ function Ventes() {
     fetchDashboardData();
   }, []);
 
-  const totalRevenue = dailySales.reduce((sum, day) => sum + (day.totalAmount || 0), 0);
+  // ✅ Calculate total revenue from actual sales
+  const totalRevenue = ventes.reduce((sum, sale) => {
+    const product = produits.find(p => p.id === sale.productId);
+    const price = product?.price || 0;
+    return sum + (sale.quantitySold * price);
+  }, 0);
+
   const stockDispo = produits.filter(p => p.quantity > 0).length;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Chargement...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-8 space-y-8">
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-black text-gray-900">Dashboard</h1>
+          <h1 className="text-3xl font-black text-gray-900">Dashboard Ventes</h1>
           <p className="text-gray-500">Aperçu analytique de votre pharmacie</p>
         </div>
         <button 
@@ -179,26 +212,38 @@ function Ventes() {
           <ProduitMieuxVendu ventes={ventes} produits={produits} />
           
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <CarteResume titre="Revenu Total" valeur={totalRevenue} icone={Package} />
+            <CarteResume titre="Revenu du Jour" valeur={totalRevenue} icone={Package} />
             <CarteResume titre="Articles en Stock" valeur={`${stockDispo} / ${produits.length}`} icone={ClipboardList} />
           </div>
         </div>
 
         <div className="bg-white rounded-xl border border-gray-100 shadow-md p-6">
-          <h2 className="font-bold text-gray-800 mb-4 border-b pb-2 text-lg">Performance 7 Jours</h2>
+          <h2 className="font-bold text-gray-800 mb-4 border-b pb-2 text-lg">Ventes du Jour</h2>
           <div className="space-y-4">
-            {dailySales.slice(0, 7).map((day, idx) => (
-              <div key={idx} className="flex justify-between items-center">
-                <span className="text-sm text-gray-500">{new Date(day.date).toLocaleDateString('fr-FR', { weekday: 'short' })}</span>
-                <div className="flex-1 mx-4 h-2 bg-gray-100 rounded-full overflow-hidden">
-                   <div 
-                    className="bg-blue-500 h-full" 
-                    style={{ width: `${(day.count / Math.max(...dailySales.map(d => d.count))) * 100}%` }}
-                   />
-                </div>
-                <span className="text-sm font-bold text-gray-700">{day.count} vnt.</span>
+            {dailySalesData && (
+              <div className="text-center p-4 bg-blue-50 rounded-lg">
+                <p className="text-sm text-gray-600">Total Vendu Aujourd'hui</p>
+                <p className="text-3xl font-bold text-blue-600">{dailySalesData.totalQuantitySold || 0}</p>
+                <p className="text-xs text-gray-500 mt-1">unités</p>
               </div>
-            ))}
+            )}
+            
+            {ventes.length > 0 ? (
+              ventes.slice(0, 5).map((sale, idx) => {
+                const product = produits.find(p => p.id === sale.productId);
+                return (
+                  <div key={idx} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-gray-800">{product?.name || `Produit #${sale.productId}`}</p>
+                      <p className="text-xs text-gray-500">{new Date(sale.saleDate).toLocaleTimeString('fr-FR')}</p>
+                    </div>
+                    <span className="text-sm font-bold text-gray-700">{sale.quantitySold} unités</span>
+                  </div>
+                );
+              })
+            ) : (
+              <p className="text-center text-gray-500 py-4">Aucune vente aujourd'hui</p>
+            )}
           </div>
         </div>
       </div>
