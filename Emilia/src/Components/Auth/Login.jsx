@@ -1,7 +1,7 @@
 import { useState } from "react";
 import logo from "../../assets/dash.svg";
 import PageWrapper from "../PageWrapper";
-import { supabase } from "../../supabaseClient"; // Ensure this points to your supabase config
+import API_BASE_URL from "../../apiConfig";
 
 export default function Login() {
   const [form, setForm] = useState({ email: "", password: "" });
@@ -18,25 +18,30 @@ export default function Login() {
     setLoading(true);
 
     try {
-      // ✅ Use Supabase directly to get a valid token
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: form.email,
-        password: form.password,
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
       });
 
-      if (error) {
-        setMessage(error.message);
-      } else if (data?.session) {
-        // ✅ Save the Supabase JWT
-        localStorage.setItem("token", data.session.access_token);
-        setMessage("Connexion réussie ! Redirection...");
-        
-        setTimeout(() => {
-          window.location.href = "/dashboard";
-        }, 1000);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.Message || data.message || "Login failed");
       }
+
+      // ✅ Match C# casing: data.Token or data.token
+      const token = data.token || data.Token;
+      localStorage.setItem("token", token);
+      
+      setMessage("Connexion réussie ! Redirection...");
+      
+      setTimeout(() => {
+        window.location.href = "/dashboard";
+      }, 1000);
+
     } catch (err) {
-      setMessage("Erreur de connexion : " + err.message);
+      setMessage("Erreur : " + err.message);
     } finally {
       setLoading(false);
     }

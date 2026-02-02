@@ -55,10 +55,9 @@ const ComponentRecu = React.forwardRef(({ cartDetails, total }, ref) => {
   );
 });
 
-// --- Receipt Modal ---
-const RecuModal = ({ isOpen, onClose, cartDetails, total }) => {
-  const receiptRef = useRef();
 
+// --- Receipt Modal (Optimized for Printing) ---
+const RecuModal = ({ isOpen, onClose, cartDetails, total }) => {
   const handlePrint = () => {
     window.print();
     onClose();
@@ -67,16 +66,21 @@ const RecuModal = ({ isOpen, onClose, cartDetails, total }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-[100] flex justify-center items-center backdrop-blur-sm">
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-[100] flex justify-center items-center backdrop-blur-sm print:bg-white">
+      {/* This container is hidden during normal view, but visible when printing */}
+      <div className="hidden print:block print:static">
+         <ComponentRecu cartDetails={cartDetails} total={total} />
+      </div>
+
       <motion.div
         initial={{ y: "-100vh", opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: "-100vh", opacity: 0 }}
-        className="bg-white rounded-xl shadow-2xl p-6 w-11/12 max-w-md"
+        className="bg-white rounded-xl shadow-2xl p-6 w-11/12 max-w-md print:hidden"
       >
         <div className="flex justify-between items-center border-b pb-3 mb-4">
           <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-            <Printer size={20} className="text-emerald-600"/> Impression du Reçu
+            <Printer size={20} className="text-emerald-600"/> Transaction Réussie
           </h3>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X size={20} />
@@ -84,19 +88,12 @@ const RecuModal = ({ isOpen, onClose, cartDetails, total }) => {
         </div>
 
         <p className="mb-4 text-gray-700">
-          La transaction est terminée ! Souhaitez-vous imprimer un reçu pour le client ?
+          Vente enregistrée. Souhaitez-vous imprimer le reçu ?
         </p>
 
-        <div className="hidden print:block absolute top-0 left-0 w-full h-full">
-          <ComponentRecu ref={receiptRef} cartDetails={cartDetails} total={total} />
-        </div>
-
         <div className="flex justify-end gap-3 mt-6">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-xl border border-gray-300 text-sm hover:bg-gray-50 transition"
-          >
-            Non, Merci
+          <button onClick={onClose} className="px-4 py-2 rounded-xl border border-gray-300 text-sm hover:bg-gray-50">
+            Fermer
           </button>
           <button
             onClick={handlePrint}
@@ -109,6 +106,7 @@ const RecuModal = ({ isOpen, onClose, cartDetails, total }) => {
     </div>
   );
 };
+
 
 // --- Main Component ---
 export default function Produits() {
