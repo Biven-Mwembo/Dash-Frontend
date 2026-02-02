@@ -89,19 +89,32 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-[100] flex justify-center items-center backdrop-blur-sm">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 z-[9999] flex justify-center items-center backdrop-blur-sm"
+      onClick={(e) => {
+        // Close modal when clicking backdrop
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+    >
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
-        className="bg-white rounded-xl shadow-2xl p-6 w-11/12 max-w-lg"
+        className="bg-white rounded-xl shadow-2xl p-6 w-11/12 max-w-lg max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()} // Prevent clicks inside modal from closing it
       >
         <div className="flex justify-between items-center border-b pb-3 mb-4">
           <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
             <Package size={20} className="text-blue-600" />
             {product ? "Modifier le Produit" : "Ajouter un Produit"}
           </h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+          <button 
+            onClick={onClose} 
+            className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-full transition"
+            type="button"
+          >
             <X size={20} />
           </button>
         </div>
@@ -125,6 +138,7 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave }) => {
               }
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
               placeholder="Ex: MED001"
+              autoComplete="off"
             />
           </div>
 
@@ -139,6 +153,7 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave }) => {
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
               placeholder="Ex: Paracétamol 500mg"
+              autoComplete="off"
             />
           </div>
 
@@ -156,6 +171,7 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave }) => {
                   setFormData({ ...formData, quantity: parseInt(e.target.value) || 0 })
                 }
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                autoComplete="off"
               />
             </div>
 
@@ -173,6 +189,7 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave }) => {
                   setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })
                 }
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                autoComplete="off"
               />
             </div>
           </div>
@@ -191,6 +208,7 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave }) => {
                 setFormData({ ...formData, prixAchat: parseFloat(e.target.value) || 0 })
               }
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              autoComplete="off"
             />
           </div>
 
@@ -206,6 +224,7 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave }) => {
               }
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
               placeholder="Ex: SUPP001"
+              autoComplete="off"
             />
           </div>
 
@@ -220,7 +239,7 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave }) => {
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm flex items-center gap-2 disabled:opacity-50"
+              className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <>
@@ -246,16 +265,28 @@ const DeleteConfirmModal = ({ isOpen, onClose, onConfirm, productName }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-[100] flex justify-center items-center backdrop-blur-sm">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 z-[9999] flex justify-center items-center backdrop-blur-sm"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+    >
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
         className="bg-white rounded-xl shadow-2xl p-6 w-11/12 max-w-md"
+        onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center border-b pb-3 mb-4">
           <h3 className="text-xl font-bold text-gray-800">Confirmer la Suppression</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+          <button 
+            onClick={onClose} 
+            className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-full transition"
+            type="button"
+          >
             <X size={20} />
           </button>
         </div>
@@ -267,12 +298,14 @@ const DeleteConfirmModal = ({ isOpen, onClose, onConfirm, productName }) => {
 
         <div className="flex justify-end gap-3">
           <button
+            type="button"
             onClick={onClose}
             className="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 transition"
           >
             Annuler
           </button>
           <button
+            type="button"
             onClick={onConfirm}
             className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-medium text-sm flex items-center gap-2"
           >
