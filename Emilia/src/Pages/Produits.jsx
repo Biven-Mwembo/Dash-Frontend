@@ -90,9 +90,8 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave }) => {
 
   return (
     <div 
-      className="fixed inset-0 bg-black bg-opacity-50 z-[9999] flex justify-center items-center backdrop-blur-sm"
+      className="fixed inset-0 bg-black bg-opacity-50 z-[9999] flex justify-center items-center backdrop-blur-sm p-4"
       onClick={(e) => {
-        // Close modal when clicking backdrop
         if (e.target === e.currentTarget) {
           onClose();
         }
@@ -102,8 +101,8 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave }) => {
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
-        className="bg-white rounded-xl shadow-2xl p-6 w-11/12 max-w-lg max-h-[90vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()} // Prevent clicks inside modal from closing it
+        className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center border-b pb-3 mb-4">
           <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
@@ -136,7 +135,7 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave }) => {
               onChange={(e) =>
                 setFormData({ ...formData, productCode: e.target.value })
               }
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
               placeholder="Ex: MED001"
               autoComplete="off"
             />
@@ -151,7 +150,7 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave }) => {
               required
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
               placeholder="Ex: Paracétamol 500mg"
               autoComplete="off"
             />
@@ -170,7 +169,7 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave }) => {
                 onChange={(e) =>
                   setFormData({ ...formData, quantity: parseInt(e.target.value) || 0 })
                 }
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
                 autoComplete="off"
               />
             </div>
@@ -188,7 +187,7 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave }) => {
                 onChange={(e) =>
                   setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })
                 }
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
                 autoComplete="off"
               />
             </div>
@@ -207,7 +206,7 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave }) => {
               onChange={(e) =>
                 setFormData({ ...formData, prixAchat: parseFloat(e.target.value) || 0 })
               }
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
               autoComplete="off"
             />
           </div>
@@ -218,11 +217,11 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave }) => {
             </label>
             <input
               type="text"
-              value={formData.supplierId}
+              value={formData.supplierId || ""}
               onChange={(e) =>
                 setFormData({ ...formData, supplierId: e.target.value })
               }
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
               placeholder="Ex: SUPP001"
               autoComplete="off"
             />
@@ -232,7 +231,7 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave }) => {
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 transition"
+              className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 text-sm hover:bg-gray-50 transition"
             >
               Annuler
             </button>
