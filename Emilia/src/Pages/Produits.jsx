@@ -22,9 +22,9 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave }) => {
   const [formData, setFormData] = useState({
     productCode: "",
     name: "",
-    quantity: 0,
-    price: 0,
-    prixAchat: 0,
+    quantity: "",  // ✅ Changed from 0 to ""
+    price: "",     // ✅ Changed from 0 to ""
+    prixAchat: "", // ✅ Changed from 0 to ""
     supplierId: "",
   });
   const [loading, setLoading] = useState(false);
@@ -35,18 +35,18 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave }) => {
       setFormData({
         productCode: product.productCode || "",
         name: product.name || "",
-        quantity: product.quantity || 0,
-        price: product.price || 0,
-        prixAchat: product.prixAchat || 0,
+        quantity: product.quantity?.toString() || "",  // ✅ Convert to string
+        price: product.price?.toString() || "",        // ✅ Convert to string
+        prixAchat: product.prixAchat?.toString() || "", // ✅ Convert to string
         supplierId: product.supplierId || "",
       });
     } else {
       setFormData({
         productCode: "",
         name: "",
-        quantity: 0,
-        price: 0,
-        prixAchat: 0,
+        quantity: "",  // ✅ Empty string instead of 0
+        price: "",
+        prixAchat: "",
         supplierId: "",
       });
     }
@@ -59,6 +59,16 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave }) => {
     setError("");
 
     try {
+      // ✅ Convert string values to numbers before sending
+      const payload = {
+        productCode: formData.productCode || null,
+        name: formData.name,
+        quantity: parseInt(formData.quantity) || 0,
+        price: parseFloat(formData.price) || 0,
+        prixAchat: parseFloat(formData.prixAchat) || 0,
+        supplierId: formData.supplierId || null,
+      };
+
       const url = product
         ? `${API_BASE_URL}/products/${product.id}`
         : `${API_BASE_URL}/products`;
@@ -68,18 +78,34 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave }) => {
       const response = await fetchWithAuth(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Erreur lors de l'enregistrement");
+        // ✅ Better error handling
+        let errorMessage = "Erreur lors de l'enregistrement";
+        
+        if (response.status === 403) {
+          errorMessage = "Accès refusé. Vous devez être administrateur pour effectuer cette action.";
+        } else if (response.status === 401) {
+          errorMessage = "Session expirée. Veuillez vous reconnecter.";
+        } else {
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.message || errorData.detail || errorMessage;
+          } catch {
+            errorMessage = `Erreur ${response.status}: ${response.statusText}`;
+          }
+        }
+        
+        throw new Error(errorMessage);
       }
 
       const savedProduct = await response.json();
       onSave(savedProduct);
       onClose();
     } catch (err) {
+      console.error("Save error:", err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -119,8 +145,8 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave }) => {
         </div>
 
         {error && (
-          <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm">
-            {error}
+          <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm border border-red-200">
+            <strong>Erreur:</strong> {error}
           </div>
         )}
 
@@ -167,9 +193,10 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave }) => {
                 min="0"
                 value={formData.quantity}
                 onChange={(e) =>
-                  setFormData({ ...formData, quantity: parseInt(e.target.value) || 0 })
+                  setFormData({ ...formData, quantity: e.target.value })  // ✅ Keep as string
                 }
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
+                placeholder="0"
                 autoComplete="off"
               />
             </div>
@@ -185,9 +212,10 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave }) => {
                 step="0.01"
                 value={formData.price}
                 onChange={(e) =>
-                  setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })
+                  setFormData({ ...formData, price: e.target.value })  // ✅ Keep as string
                 }
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
+                placeholder="0.00"
                 autoComplete="off"
               />
             </div>
@@ -204,9 +232,10 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave }) => {
               step="0.01"
               value={formData.prixAchat}
               onChange={(e) =>
-                setFormData({ ...formData, prixAchat: parseFloat(e.target.value) || 0 })
+                setFormData({ ...formData, prixAchat: e.target.value })  // ✅ Keep as string
               }
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
+              placeholder="0.00"
               autoComplete="off"
             />
           </div>
