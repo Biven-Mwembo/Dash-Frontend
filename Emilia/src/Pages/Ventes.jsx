@@ -191,7 +191,7 @@ function Ventes() {
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-black text-gray-900">Dashboard Ventes</h1>
-          <p className="text-gray-500">Aperçu analytique de votre pharmacie</p>
+          <p className="text-gray-500">Aperçu analytique de KinLight</p>
         </div>
         <button 
            onClick={() => window.location.reload()}

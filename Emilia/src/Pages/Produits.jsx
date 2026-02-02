@@ -1,3 +1,4 @@
+
 /* eslint-disable no-irregular-whitespace */
 /* eslint-disable no-unused-vars */
 import React, { useState, useEffect, useRef } from "react";
@@ -10,11 +11,281 @@ import {
   X,
   Search,
   Printer,
+  Edit,
+  Package,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import API_BASE_URL, { fetchWithAuth } from "../apiConfig";
 
-// --- Receipt Component ---
+// --- Product Form Modal ---
+const ProductFormModal = ({ isOpen, onClose, product, onSave }) => {
+  const [formData, setFormData] = useState({
+    productCode: "",
+    name: "",
+    quantity: 0,
+    price: 0,
+    prixAchat: 0,
+    supplierId: "",
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (product) {
+      setFormData({
+        productCode: product.productCode || "",
+        name: product.name || "",
+        quantity: product.quantity || 0,
+        price: product.price || 0,
+        prixAchat: product.prixAchat || 0,
+        supplierId: product.supplierId || "",
+      });
+    } else {
+      setFormData({
+        productCode: "",
+        name: "",
+        quantity: 0,
+        price: 0,
+        prixAchat: 0,
+        supplierId: "",
+      });
+    }
+    setError("");
+  }, [product, isOpen]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
+    try {
+      const url = product
+        ? `${API_BASE_URL}/products/${product.id}`
+        : `${API_BASE_URL}/products`;
+
+      const method = product ? "PUT" : "POST";
+
+      const response = await fetchWithAuth(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Erreur lors de l'enregistrement");
+      }
+
+      const savedProduct = await response.json();
+      onSave(savedProduct);
+      onClose();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-[100] flex justify-center items-center backdrop-blur-sm">
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.9, opacity: 0 }}
+        className="bg-white rounded-xl shadow-2xl p-6 w-11/12 max-w-lg"
+      >
+        <div className="flex justify-between items-center border-b pb-3 mb-4">
+          <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+            <Package size={20} className="text-blue-600" />
+            {product ? "Modifier le Produit" : "Ajouter un Produit"}
+          </h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <X size={20} />
+          </button>
+        </div>
+
+        {error && (
+          <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Code Produit (optionnel)
+            </label>
+            <input
+              type="text"
+              value={formData.productCode}
+              onChange={(e) =>
+                setFormData({ ...formData, productCode: e.target.value })
+              }
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              placeholder="Ex: MED001"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Nom du Produit *
+            </label>
+            <input
+              type="text"
+              required
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              placeholder="Ex: Paracétamol 500mg"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Quantité *
+              </label>
+              <input
+                type="number"
+                required
+                min="0"
+                value={formData.quantity}
+                onChange={(e) =>
+                  setFormData({ ...formData, quantity: parseInt(e.target.value) || 0 })
+                }
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Prix de Vente (FC) *
+              </label>
+              <input
+                type="number"
+                required
+                min="0"
+                step="0.01"
+                value={formData.price}
+                onChange={(e) =>
+                  setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })
+                }
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Prix d'Achat (FC) *
+            </label>
+            <input
+              type="number"
+              required
+              min="0"
+              step="0.01"
+              value={formData.prixAchat}
+              onChange={(e) =>
+                setFormData({ ...formData, prixAchat: parseFloat(e.target.value) || 0 })
+              }
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              ID Fournisseur (optionnel)
+            </label>
+            <input
+              type="text"
+              value={formData.supplierId}
+              onChange={(e) =>
+                setFormData({ ...formData, supplierId: e.target.value })
+              }
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              placeholder="Ex: SUPP001"
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 transition"
+            >
+              Annuler
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm flex items-center gap-2 disabled:opacity-50"
+            >
+              {loading ? (
+                <>
+                  <span className="animate-spin h-4 w-4 border-b-2 border-white rounded-full"></span>
+                  Enregistrement...
+                </>
+              ) : (
+                <>
+                  <PlusCircle size={16} />
+                  {product ? "Mettre à Jour" : "Ajouter"}
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </motion.div>
+    </div>
+  );
+};
+
+// --- Delete Confirmation Modal ---
+const DeleteConfirmModal = ({ isOpen, onClose, onConfirm, productName }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-[100] flex justify-center items-center backdrop-blur-sm">
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.9, opacity: 0 }}
+        className="bg-white rounded-xl shadow-2xl p-6 w-11/12 max-w-md"
+      >
+        <div className="flex justify-between items-center border-b pb-3 mb-4">
+          <h3 className="text-xl font-bold text-gray-800">Confirmer la Suppression</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <X size={20} />
+          </button>
+        </div>
+
+        <p className="text-gray-700 mb-6">
+          Êtes-vous sûr de vouloir supprimer <strong>{productName}</strong> ?
+          Cette action est irréversible.
+        </p>
+
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 transition"
+          >
+            Annuler
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-medium text-sm flex items-center gap-2"
+          >
+            <Trash2 size={16} />
+            Supprimer
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
+
+// --- Receipt Component (unchanged) ---
 const ComponentRecu = React.forwardRef(({ cartDetails, total }, ref) => {
   const formatNumber = (num) => {
     return num.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
@@ -55,7 +326,7 @@ const ComponentRecu = React.forwardRef(({ cartDetails, total }, ref) => {
   );
 });
 
-// --- Receipt Modal ---
+// --- Receipt Modal (unchanged) ---
 const RecuModal = ({ isOpen, onClose, cartDetails, total }) => {
   const receiptRef = useRef();
 
@@ -125,6 +396,13 @@ export default function Produits() {
   const [lastSaleReceipt, setLastSaleReceipt] = useState(null);
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
 
+  // ✅ Product Management States
+  const [isProductFormOpen, setIsProductFormOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deletingProduct, setDeletingProduct] = useState(null);
+  const [viewMode, setViewMode] = useState("pos"); // "pos" or "manage"
+
   const productsPerPage = 8;
 
   const formatNumber = (num) => {
@@ -133,36 +411,74 @@ export default function Produits() {
 
   // ✅ Fetch Products
   useEffect(() => {
-    const fetchProducts = async () => {
-      setLoading(true);
-      setError(null);
-      
-      try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/products`);
-        
-        if (!response.ok) {
-          throw new Error("Échec de la récupération des produits");
-        }
-        
-        const data = await response.json();
-        console.log("✅ Products loaded:", data.length);
-        setProducts(data);
-      } catch (err) {
-        console.error("❌ Fetch error:", err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
     fetchProducts();
-  }, [lastSaleReceipt]);
+  }, []);
+
+  const fetchProducts = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await fetchWithAuth(`${API_BASE_URL}/products`);
+      
+      if (!response.ok) {
+        throw new Error("Échec de la récupération des produits");
+      }
+      
+      const data = await response.json();
+      console.log("✅ Products loaded:", data.length);
+      setProducts(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("❌ Fetch error:", err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ Handle Product Save (Create/Update)
+  const handleProductSave = (savedProduct) => {
+    if (editingProduct) {
+      // Update existing product
+      setProducts(prev => 
+        prev.map(p => p.id === savedProduct.id ? savedProduct : p)
+      );
+    } else {
+      // Add new product
+      setProducts(prev => [...prev, savedProduct]);
+    }
+    setEditingProduct(null);
+  };
+
+  // ✅ Handle Product Delete
+  const handleDeleteProduct = async () => {
+    if (!deletingProduct) return;
+
+    try {
+      const response = await fetchWithAuth(
+        `${API_BASE_URL}/products/${deletingProduct.id}`,
+        { method: "DELETE" }
+      );
+
+      if (!response.ok) {
+        throw new Error("Échec de la suppression");
+      }
+
+      setProducts(prev => prev.filter(p => p.id !== deletingProduct.id));
+      setIsDeleteModalOpen(false);
+      setDeletingProduct(null);
+    } catch (err) {
+      console.error("Delete error:", err);
+      alert("Erreur lors de la suppression: " + err.message);
+    }
+  };
 
   // Safe filtering
-  const filteredProducts = products.filter((p) =>
-    p.quantity > 0 && 
-    p.name?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredProducts = products.filter((p) => {
+    const matchesSearch = p.name?.toLowerCase().includes(searchQuery.toLowerCase());
+    const hasStock = viewMode === "pos" ? p.quantity > 0 : true;
+    return matchesSearch && hasStock;
+  });
 
   const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
   const paginatedProducts = filteredProducts.slice(
@@ -197,7 +513,7 @@ export default function Produits() {
 
   const clearCart = () => setCart([]);
 
-  // ✅ Fixed Checkout Process
+  // ✅ Checkout Process
   const handleCheckout = async () => {
     if (cart.length === 0) return;
     
@@ -237,6 +553,9 @@ export default function Produits() {
       setCart([]);
       setDrawerOpen(false);
       
+      // Refresh products to update stock
+      fetchProducts();
+      
       setLastSaleReceipt({ cartDetails: detailsRecu, total: totalVente });
       setIsReceiptModalOpen(true);
 
@@ -250,15 +569,45 @@ export default function Produits() {
 
   return (
     <div className="flex flex-col gap-4 p-2 sm:p-4 bg-gray-50 min-h-screen relative">
-      <h1 className="text-3xl font-bold text-gray-900 mb-2 border-b border-gray-200 pb-2">
-        Point De Vente (PDV)
-      </h1>
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-2">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 border-b border-gray-200 pb-2">
+            {viewMode === "pos" ? "Point De Vente (PDV)" : "Gestion des Produits"}
+          </h1>
+        </div>
+        
+        <div className="flex gap-2">
+          <button
+            onClick={() => setViewMode(viewMode === "pos" ? "manage" : "pos")}
+            className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium text-sm transition"
+          >
+            {viewMode === "pos" ? "📦 Gérer Stock" : "🛒 Mode Vente"}
+          </button>
+          
+          {viewMode === "manage" && (
+            <button
+              onClick={() => {
+                setEditingProduct(null);
+                setIsProductFormOpen(true);
+              }}
+              className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm flex items-center gap-2"
+            >
+              <PlusCircle size={16} />
+              Nouveau Produit
+            </button>
+          )}
+        </div>
+      </div>
       
       {/* Product Grid */}
       <div className="bg-white rounded-2xl shadow-xl p-4 sm:p-6 flex flex-col">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-5 gap-4 border-b border-gray-100 pb-4">
           <h2 className="text-2xl font-semibold text-gray-800">
-            Articles en Stock ({filteredProducts.length})
+            {viewMode === "pos" 
+              ? `Articles en Stock (${filteredProducts.length})`
+              : `Tous les Produits (${filteredProducts.length})`
+            }
           </h2>
           <div className="relative w-full sm:max-w-xs">
             <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
@@ -275,16 +624,17 @@ export default function Produits() {
         </div>
 
         {loading && (
-          <p className="text-center py-10 text-gray-500 text-base">
-            Chargement des produits...
-          </p>
+          <div className="text-center py-10">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="text-gray-500 mt-4">Chargement des produits...</p>
+          </div>
         )}
         
         {error && (
           <div className="text-center py-10">
             <p className="text-red-600 text-base mb-4">Erreur : {error}</p>
             <button
-              onClick={() => window.location.reload()}
+              onClick={fetchProducts}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
               Réessayer
@@ -320,7 +670,7 @@ export default function Produits() {
                       FC {p.price ? formatNumber(p.price) : '0.00'}
                     </p>
                     
-                                        <p
+                    <p
                       className={`px-3 py-1 rounded-full text-xs font-semibold mt-2 ${
                         isSoldOut 
                           ? 'bg-red-100 text-red-700' 
@@ -330,25 +680,54 @@ export default function Produits() {
                       Stock: {isSoldOut ? "Épuisé" : p.quantity}
                     </p>
                     
-                    {isMaxQuantity && (
+                    {isMaxQuantity && viewMode === "pos" && (
                       <p className="text-xs text-red-500 mt-1 font-semibold">Max Atteint!</p>
                     )}
 
-                    <button
-                      onClick={() => handleAddToCart(p)}
-                      disabled={isSoldOut || isMaxQuantity}
-                      className={`mt-4 flex items-center justify-center gap-2 text-sm font-medium w-full px-3 py-2 rounded-xl transition ${
-                        isSoldOut || isMaxQuantity
-                          ? 'bg-gray-300 text-gray-600 cursor-not-allowed opacity-70'
-                          : 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                      }`}
-                    >
-                      <PlusCircle size={16} /> Ajouter
-                    </button>
+                    {viewMode === "pos" ? (
+                      <button
+                        onClick={() => handleAddToCart(p)}
+                        disabled={isSoldOut || isMaxQuantity}
+                        className={`mt-4 flex items-center justify-center gap-2 text-sm font-medium w-full px-3 py-2 rounded-xl transition ${
+                          isSoldOut || isMaxQuantity
+                            ? 'bg-gray-300 text-gray-600 cursor-not-allowed opacity-70'
+                            : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                        }`}
+                      >
+                        <PlusCircle size={16} /> Ajouter
+                      </button>
+                    ) : (
+                      <div className="flex gap-2 mt-4 w-full">
+                        <button
+                          onClick={() => {
+                            setEditingProduct(p);
+                            setIsProductFormOpen(true);
+                          }}
+                          className="flex-1 flex items-center justify-center gap-1 text-sm font-medium px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition"
+                        >
+                          <Edit size={14} /> Modifier
+                        </button>
+                        <button
+                          onClick={() => {
+                            setDeletingProduct(p);
+                            setIsDeleteModalOpen(true);
+                          }}
+                          className="flex items-center justify-center px-3 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white transition"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    )}
                   </motion.div>
                 );
               })}
             </div>
+
+            {filteredProducts.length === 0 && (
+              <div className="text-center py-10">
+                <p className="text-gray-500">Aucun produit trouvé</p>
+              </div>
+            )}
 
             {/* Pagination */}
             {filteredProducts.length > 0 && totalPages > 1 && (
@@ -363,7 +742,7 @@ export default function Produits() {
                 <span className="text-base font-semibold text-gray-700">
                   Page {currentPage} de {totalPages}
                 </span>
-                <button
+                                <button
                   onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
                   disabled={currentPage === totalPages}
                   className="p-2 rounded-xl border border-gray-300 text-gray-700 disabled:opacity-50 hover:bg-gray-100 transition"
@@ -376,106 +755,108 @@ export default function Produits() {
         )}
       </div>
 
-      {/* Shopping Cart Drawer */}
-      <AnimatePresence>
-        {drawerOpen && (
-          <motion.div
-            initial={{ x: "100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "100%" }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="fixed top-0 right-0 h-full w-full lg:w-96 bg-white rounded-l-3xl shadow-2xl p-6 flex flex-col z-50 border-l-4 border-emerald-500"
-          >
-            <button
-              onClick={() => setDrawerOpen(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-2 rounded-full hover:bg-gray-100 transition"
+      {/* Shopping Cart Drawer - Only in POS mode */}
+      {viewMode === "pos" && (
+        <AnimatePresence>
+          {drawerOpen && (
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              className="fixed top-0 right-0 h-full w-full lg:w-96 bg-white rounded-l-3xl shadow-2xl p-6 flex flex-col z-50 border-l-4 border-emerald-500"
             >
-              <X size={24} />
-            </button>
+              <button
+                onClick={() => setDrawerOpen(false)}
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-2 rounded-full hover:bg-gray-100 transition"
+              >
+                <X size={24} />
+              </button>
 
-            <h3 className="text-2xl font-bold text-gray-800 mb-5 flex items-center gap-2 border-b pb-3">
-              <ShoppingCart size={20} /> Panier de Commande
-            </h3>
+              <h3 className="text-2xl font-bold text-gray-800 mb-5 flex items-center gap-2 border-b pb-3">
+                <ShoppingCart size={20} /> Panier de Commande
+              </h3>
 
-            {checkoutMessage && (
-              <div className={`mb-4 p-3 ${checkoutMessage.includes("Erreur") ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'} rounded-xl text-sm border border-current font-medium`}>
-                {checkoutMessage}
-              </div>
-            )}
+              {checkoutMessage && (
+                <div className={`mb-4 p-3 ${checkoutMessage.includes("Erreur") ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'} rounded-xl text-sm border border-current font-medium`}>
+                  {checkoutMessage}
+                </div>
+              )}
 
-            <div className="grow overflow-y-auto space-y-4">
-              {cart.length === 0 ? (
-                <p className="text-gray-500 text-center mt-10 text-base py-10">
-                  Aucun article ajouté. Cliquez sur un produit.
-                </p>
-              ) : (
-                cart.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg shadow-sm"
-                  >
-                    <div className="flex items-center gap-4">
-                      <img
-                        src={`https://placehold.co/100x100/34D399/FFFFFF?text=P`}
-                        alt={item.name}
-                        className="w-14 h-14 rounded-lg object-cover"
-                      />
-                      <div>
-                        <p className="font-semibold text-gray-800 text-base">{item.name}</p>
-                        <p className="text-sm text-gray-600">
-                          {item.quantity} × FC {item.price ? formatNumber(item.price) : '0.00'}
-                        </p>
-                      </div>
-                    </div>
-                    <button 
-                      onClick={() => handleRemoveFromCart(item.id)}
-                      className="text-gray-400 hover:text-red-600 p-2 rounded-full transition hover:bg-red-50"
+              <div className="grow overflow-y-auto space-y-4">
+                {cart.length === 0 ? (
+                  <p className="text-gray-500 text-center mt-10 text-base py-10">
+                    Aucun article ajouté. Cliquez sur un produit.
+                  </p>
+                ) : (
+                  cart.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg shadow-sm"
                     >
-                      <Trash2 size={18} />
+                      <div className="flex items-center gap-4">
+                        <img
+                          src={`https://placehold.co/100x100/34D399/FFFFFF?text=P`}
+                          alt={item.name}
+                          className="w-14 h-14 rounded-lg object-cover"
+                        />
+                        <div>
+                          <p className="font-semibold text-gray-800 text-base">{item.name}</p>
+                          <p className="text-sm text-gray-600">
+                            {item.quantity} × FC {item.price ? formatNumber(item.price) : '0.00'}
+                          </p>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => handleRemoveFromCart(item.id)}
+                        className="text-gray-400 hover:text-red-600 p-2 rounded-full transition hover:bg-red-50"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {cart.length > 0 && (
+                <div className="border-t border-gray-200 pt-5 mt-auto">
+                  <div className="flex justify-between font-extrabold text-gray-900 mb-4 text-lg">
+                    <span>Total à Payer:</span>
+                    <span>
+                      FC {formatNumber(cart.reduce((acc, item) => acc + item.price * item.quantity, 0))}
+                    </span>
+                  </div>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={clearCart}
+                      className="w-1/3 px-4 py-3 rounded-xl border border-gray-300 text-gray-700 font-medium text-base hover:bg-gray-100 transition"
+                    >
+                      Annuler
+                    </button>
+                    <button
+                      onClick={handleCheckout}
+                      disabled={checkoutLoading}
+                      className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl px-4 py-3 text-base disabled:opacity-50 disabled:bg-emerald-500 flex items-center justify-center gap-2"
+                    >
+                      {checkoutLoading ? (
+                        <>
+                          <span className="animate-spin h-5 w-5 border-b-2 border-white rounded-full"></span>
+                          Traitement...
+                        </>
+                      ) : (
+                        "Finaliser la Vente"
+                      )}
                     </button>
                   </div>
-                ))
+                </div>
               )}
-            </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      )}
 
-            {cart.length > 0 && (
-              <div className="border-t border-gray-200 pt-5 mt-auto">
-                <div className="flex justify-between font-extrabold text-gray-900 mb-4 text-lg">
-                  <span>Total à Payer:</span>
-                  <span>
-                    FC {formatNumber(cart.reduce((acc, item) => acc + item.price * item.quantity, 0))}
-                  </span>
-                </div>
-                <div className="flex gap-3">
-                  <button
-                    onClick={clearCart}
-                    className="w-1/3 px-4 py-3 rounded-xl border border-gray-300 text-gray-700 font-medium text-base hover:bg-gray-100 transition"
-                  >
-                    Annuler
-                  </button>
-                  <button
-                    onClick={handleCheckout}
-                    disabled={checkoutLoading}
-                    className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl px-4 py-3 text-base disabled:opacity-50 disabled:bg-emerald-500 flex items-center justify-center gap-2"
-                  >
-                    {checkoutLoading ? (
-                      <>
-                        <span className="animate-spin h-5 w-5 border-b-2 border-white rounded-full"></span>
-                        Traitement...
-                      </>
-                    ) : (
-                      "Finaliser la Vente"
-                    )}
-                  </button>
-                </div>
-              </div>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Floating Cart Button */}
-      {cart.length > 0 && (
+      {/* Floating Cart Button - Only in POS mode */}
+      {viewMode === "pos" && cart.length > 0 && (
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
@@ -489,6 +870,28 @@ export default function Produits() {
           </span>
         </motion.div>
       )}
+
+      {/* Product Form Modal */}
+      <ProductFormModal
+        isOpen={isProductFormOpen}
+        onClose={() => {
+          setIsProductFormOpen(false);
+          setEditingProduct(null);
+        }}
+        product={editingProduct}
+        onSave={handleProductSave}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setDeletingProduct(null);
+        }}
+        onConfirm={handleDeleteProduct}
+        productName={deletingProduct?.name || ""}
+      />
 
       {/* Receipt Modal */}
       {isReceiptModalOpen && lastSaleReceipt && (
