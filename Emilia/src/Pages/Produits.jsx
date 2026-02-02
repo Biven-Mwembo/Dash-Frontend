@@ -595,7 +595,7 @@ export default function Produits() {
         quantitySold: item.quantity,
       }));
       
-      console.log("🛒 Processing sale:", saleItems);
+      
       
       const response = await fetchWithAuth(`${API_BASE_URL}/products/sale`, {
         method: "POST",
@@ -608,7 +608,7 @@ export default function Produits() {
         throw new Error(`Échec: ${errorText || response.statusText}`);
       }
       
-      console.log("✅ Sale completed successfully");
+      
       
       setCheckoutMessage("Vente complétée avec succès !");
       setCart([]);
@@ -641,7 +641,7 @@ export default function Produits() {
         <div className="flex gap-2">
           <button
             onClick={() => setViewMode(viewMode === "pos" ? "manage" : "pos")}
-            className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium text-sm transition"
+            className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-gray-300 text-white font-medium text-sm transition"
           >
             {viewMode === "pos" ? "📦 Gérer Stock" : "🛒 Mode Vente"}
           </button>
