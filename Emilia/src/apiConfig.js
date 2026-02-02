@@ -1,5 +1,5 @@
 // ✅ Central API URL Configuration
-const API_BASE_URL = import.meta.env.VITE_API_URL || "https://dash-backend-1-60mf.onrender.com";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "https://dash-backend-1-60mf.onrender.com/api";
 
 export default API_BASE_URL;
 
