@@ -1,11 +1,9 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import logo from "../../assets/dash.svg";
 import PageWrapper from "../PageWrapper";
 import API_BASE_URL from "../../apiConfig";
 
 export default function Login() {
-  const navigate = useNavigate();
   const [form, setForm] = useState({ email: "", password: "" });
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
@@ -35,28 +33,13 @@ export default function Login() {
       // ✅ Match C# casing: data.Token or data.token
       const token = data.token || data.Token;
       localStorage.setItem("token", token);
-
+      
       setMessage("Connexion réussie ! Redirection...");
+      
+      setTimeout(() => {
+        window.location.href = "/dashboard";
+      }, 1000);
 
-      // ✅ Decode JWT to get user role
-      try {
-        const payload = JSON.parse(atob(token.split(".")[1]));
-        const userRole = payload.role || "user";
-
-        setTimeout(() => {
-          // ✅ Redirect based on role
-          if (userRole === "admin") {
-            navigate("/ventes"); // Admin goes to Ventes (Sales)
-          } else {
-            navigate("/produits"); // Regular user goes to Products
-          }
-        }, 1000);
-      } catch (decodeError) {
-        // ✅ Fallback if token decode fails
-        setTimeout(() => {
-          navigate("/produits");
-        }, 1000);
-      }
     } catch (err) {
       setMessage("Erreur : " + err.message);
     } finally {
@@ -77,15 +60,9 @@ export default function Login() {
           <img src={logo} alt="Logo" className="w-32 h-auto object-contain" />
         </div>
         <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-          <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">
-            Connexion
-          </h2>
+          <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">Connexion</h2>
           {message && (
-            <p
-              className={`mb-4 text-center font-medium ${
-                message.includes("réussie") ? "text-green-500" : "text-red-500"
-              }`}
-            >
+            <p className={`mb-4 text-center ${message.includes("réussie") ? "text-green-500" : "text-red-500"}`}>
               {message}
             </p>
           )}
@@ -98,7 +75,6 @@ export default function Login() {
               onChange={handleChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 text-gray-900"
               required
-              autoComplete="email"
             />
             <input
               type="password"
@@ -108,11 +84,10 @@ export default function Login() {
               onChange={handleChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 text-gray-900"
               required
-              autoComplete="current-password"
             />
             <button
               type="submit"
-              className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition disabled:opacity-50 font-medium"
+              className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition disabled:opacity-50"
               disabled={loading}
             >
               {loading ? "Connexion en cours..." : "Se connecter"}
@@ -120,10 +95,7 @@ export default function Login() {
             {loading && <Spinner />}
           </form>
           <p className="text-center mt-4 text-gray-700">
-            Pas de compte ?{" "}
-            <a href="/signup" className="text-blue-600 hover:underline font-medium">
-              S'inscrire
-            </a>
+            Pas de compte ? <a href="/signup" className="text-blue-600 hover:underline">S'inscrire</a>
           </p>
         </div>
       </div>
