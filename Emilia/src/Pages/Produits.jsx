@@ -729,7 +729,7 @@ export default function Produits() {
             >
               <PlusCircle size={16} />
               <span className="hidden sm:inline">Nouveau</span>
-              <span className="sm:hidden">+</span>
+              <span className="sm:hidden">Ajouter</span>
             </button>
           )}
         </div>

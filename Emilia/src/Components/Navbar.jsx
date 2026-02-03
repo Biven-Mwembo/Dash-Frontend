@@ -149,13 +149,13 @@ export default function Navbar() {
         {/* Right Section - Notifications & Profile */}
         <div className="flex items-center gap-3 sm:gap-4">
           {/* Notification Bell */}
-          <div className="relative" ref={notificationRef}>
+          <div className="relative bg-white text-gray-900" ref={notificationRef}>
             <button
               onClick={() => setShowNotifications(!showNotifications)}
               className="relative p-2 rounded-full hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
               aria-label="Notifications"
             >
-              <Bell size={22} className="text-gray-700" />
+              <Bell size={22} className="text-gray-900 bg-white" />
               {unreadCount > 0 && (
                 <motion.span
                   initial={{ scale: 0 }}
@@ -265,7 +265,7 @@ export default function Navbar() {
                         </motion.div>
                       ))
                     ) : (
-                      <div className="p-8 text-center">
+                      <div className="p-8 text-center bg-white text-gray-900">
                         <Bell
                           size={48}
                           className="mx-auto text-gray-300 mb-3"
@@ -341,7 +341,7 @@ export default function Navbar() {
                         navigate("/dashboard");
                         setShowProfileMenu(false);
                       }}
-                      className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition"
+                      className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-white rounded-lg transition"
                     >
                       <User size={18} />
                       Mon Profil
@@ -351,7 +351,7 @@ export default function Navbar() {
                         navigate("/settings");
                         setShowProfileMenu(false);
                       }}
-                      className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition"
+                      className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-white rounded-lg transition"
                     >
                       <Settings size={18} />
                       Paramètres
